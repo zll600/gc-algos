@@ -1,10 +1,10 @@
-pub mod gc_trait;
-pub mod object;
-pub mod heap;
 pub mod algorithms;
+pub mod gc_trait;
+pub mod heap;
+pub mod object;
 
-pub use gc_trait::{Gc, GcHandle, GcStats};
 pub use algorithms::MarkSweepGc;
+pub use gc_trait::{Gc, GcHandle, GcStats};
 
 #[cfg(test)]
 mod tests {
@@ -45,7 +45,10 @@ mod tests {
         gc.collect();
         let stats_after = gc.stats();
 
-        assert_eq!(stats_after.num_collections, stats_before.num_collections + 1);
+        assert_eq!(
+            stats_after.num_collections,
+            stats_before.num_collections + 1
+        );
     }
 
     #[test]

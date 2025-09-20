@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use crate::object::GcObject;
+use std::rc::Rc;
 
 pub struct Heap {
     objects: Vec<Rc<GcObject>>,
@@ -42,7 +42,8 @@ impl Heap {
     }
 
     pub fn roots(&self) -> Vec<Rc<GcObject>> {
-        self.objects.iter()
+        self.objects
+            .iter()
             .filter(|obj| Rc::strong_count(obj) > 1)
             .cloned()
             .collect()

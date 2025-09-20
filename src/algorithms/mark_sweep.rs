@@ -1,14 +1,14 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
 use crate::gc_trait::{Gc, GcHandle, GcStats};
 use crate::heap::Heap;
 use crate::object::GcObject;
+use std::cell::RefCell;
+use std::collections::VecDeque;
+use std::rc::Rc;
 
 pub struct MarkSweepGc {
     heap: Heap,
     roots: Vec<Rc<GcObject>>,
-    handles: HashMap<usize, Rc<GcObject>>,
+    objects: Vec<Rc<GcObject>>,
     stats: GcStats,
 }
 
@@ -23,7 +23,7 @@ impl MarkSweepGc {
             }
         }
 
-        for (_id, obj) in &self.handles {
+        for obj in &self.objects {
             if Rc::strong_count(obj) > 1 && !obj.is_marked() {
                 obj.mark();
                 work_list.push_back(obj.clone());
@@ -44,9 +44,9 @@ impl MarkSweepGc {
     }
 
     fn sweep(&mut self) {
-        let before_size = self.handles.len();
+        let before_size = self.objects.len();
 
-        self.handles.retain(|_id, obj| {
+        self.objects.retain(|obj| {
             if obj.is_marked() {
                 obj.unmark();
                 true
@@ -57,9 +57,9 @@ impl MarkSweepGc {
 
         self.heap.sweep();
 
-        let freed = before_size - self.handles.len();
+        let freed = before_size - self.objects.len();
         self.stats.total_freed += freed;
-        self.stats.current_heap_size = self.handles.len();
+        self.stats.current_heap_size = self.objects.len();
     }
 }
 
@@ -68,7 +68,7 @@ impl Gc for MarkSweepGc {
         MarkSweepGc {
             heap: Heap::new(),
             roots: Vec::new(),
-            handles: HashMap::new(),
+            objects: Vec::new(),
             stats: GcStats::default(),
         }
     }
@@ -77,9 +77,8 @@ impl Gc for MarkSweepGc {
         let data = Rc::new(RefCell::new(value));
         let boxed: Box<dyn std::any::Any> = Box::new(data.clone());
         let obj = self.heap.allocate(boxed);
-        let id = obj.id;
 
-        self.handles.insert(id, obj.clone());
+        self.objects.push(obj.clone());
 
         self.stats.total_allocated += 1;
         self.stats.current_heap_size += 1;
@@ -88,7 +87,7 @@ impl Gc for MarkSweepGc {
             self.collect();
         }
 
-        GcHandle { id, data }
+        GcHandle { data }
     }
 
     fn collect(&mut self) {

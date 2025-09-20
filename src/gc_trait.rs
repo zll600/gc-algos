@@ -1,7 +1,9 @@
 use std::rc::Rc;
 
 pub trait Gc {
-    fn new() -> Self where Self: Sized;
+    fn new() -> Self
+    where
+        Self: Sized;
 
     fn alloc<T: 'static>(&mut self, value: T) -> GcHandle<T>;
 
@@ -12,7 +14,6 @@ pub trait Gc {
 
 #[derive(Clone)]
 pub struct GcHandle<T> {
-    pub(crate) id: usize,
     pub(crate) data: Rc<std::cell::RefCell<T>>,
 }
 
